@@ -6,7 +6,7 @@ The adapter connects to both C64 joystick ports and allows the active port to be
 
 Also, the interface allows up to four custom mappings to be programmed using a C64-side application.  The custom mappings allow any combination of joystick port two and port one control lines to be mapped to any of the Super Nintendo controller action buttons (A,B,X,Y,L,R).  Any of the action buttons can also have an optional rapid-fire function applied, of which a normal and 'inverted' state is avaliable.  'Inverted' rapid fire is simply that when active the output state of the effected button will be opposite to of a normal rapid fire button when pushed.  For example, mapping a button to joystick left with rapid fire and another button to joystick right with inverted rapid fire will simulate a rapid left/right joystick waggle when both buttons are pushed.
 
-This code was originally developed for the Atmel AVRMega8 mcu and was then later ported over to the AVRMega88.  This was mainly due to the availiablilty of the Mega8 and that the Mega88 has more power saving features.
+This code was originally developed for the Atmel ATMega8 mcu and was then later ported over to the ATMega88.  This was mainly due to the availiablilty of the Mega8 and that the Mega88 has more power saving features.
 
 This source code was written using AVR-GCC and AVR Libc.
 	
