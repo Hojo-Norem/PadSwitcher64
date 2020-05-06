@@ -84,6 +84,7 @@
 	SELECT + UP					TOGGLE DISABLE DPAD UP
 	START 						SWAP CONTROL PORTS 
 	SELECT + A					CHANGE SPECIAL (default mapping only)
+	SELECT + X					Change TURBO FIRE speed between FAST and SLOW.  Power on default is FAST.
 	SELECT + L					Swap 'Special' function between 'DOWN + FIRE' and 'UP + FIRE'.
 	SELECT + R					SELECT KEYBOARD MATRIX LINE (CIA 1 PB0 to PB4, PB4 default at startup, PORT 2 MODE ONLY, default mapping only)
 									PB4 = SPACE		R-SHIFT		.		M		B		C		Z		F1/F2
@@ -235,8 +236,7 @@
 
 #define EXREGCOUNT 2
 
-#define PADREADRATE 0
-#define RAPIDMAX 1
+
 
 
 
@@ -263,6 +263,7 @@ volatile uint8_t tick;
 
 uint16_t RAPID;
 uint8_t RAPIDSTATE;
+uint8_t RAPIDMAX;
 uint8_t NEWSCAN;
 uint16_t COMTIMEOUT;
 
@@ -290,6 +291,7 @@ void main(void)
 uint8_t MATRIX_HELD;
 uint8_t	SWAP_HELD;
 uint8_t SPECIAL_HELD;
+uint8_t RAPID_HELD;
 uint8_t MATRIX;
 uint8_t SWAP;
 uint8_t SPECIAL;
@@ -308,11 +310,10 @@ uint8_t BUTTON;
 uint8_t EEPROM_INIT;
 uint8_t ISOPERAND;
 uint8_t PADSEL;
-
 uint8_t EXCOM;
 uint8_t EXREG;
 	cli();
-	CLKPR=0;						// Set 4Mhz main clock
+	CLKPR=128;						// Set 4Mhz main clock
 	CLKPR=1;						//
 	
 	//****************************
@@ -345,7 +346,7 @@ uint8_t EXREG;
 	
 	SPECIAL_HELD = 0;
 	
-	
+	RAPID_HELD=0;
 	
 	NEGTIMEOUT =0;
 	
@@ -359,7 +360,7 @@ uint8_t EXREG;
 	
 	COMTIMEOUT=0;
 	
-	
+	RAPIDMAX=30;
 	
 	
 	EXREG=0;
@@ -383,8 +384,8 @@ uint8_t EXREG;
 				MAPPINGS[MAPPING][BUTTON][1]=0;
 			}
 		}
-		EXREGS[PADREADRATE]=13;
-		EXREGS[RAPIDMAX]=10;		//Roughly 20Hz (Tick clock 205Hz/10)
+		//EXREGS[PADREADRATE]=13;
+		//EXREGS[RAPIDMAX]=60;		//Default rapid-fire rate
 	}
 	
 	
@@ -407,7 +408,7 @@ uint8_t EXREG;
 	SetCP2(0);
 	EXCOM=1;
 	IMODE=0;
-	error=20;
+	error=10;
 	tick=0;
 	sei();
 
@@ -566,8 +567,8 @@ uint8_t EXREG;
 				********** currently not implemented, if ever *************
 					02 - Select extended register
 					   (Operand = register:
-											01 - Pad access rate
-											02 - Turbo fire rate low nybble.
+											
+											
 											
 					03 - Read Extended register
 					04 - Write Extended Register
@@ -592,7 +593,7 @@ uint8_t EXREG;
 				SetCP2(0);
 				EXCOM=1;
 				IMODE=0;
-				error=20;
+				error=10;
 			}
 			COMMAND = ReadCP2()&CP_ALL;
 			SetLED(COMMAND&CP_FIRE);
@@ -810,7 +811,13 @@ uint8_t EXREG;
 					if(SPECIAL>2) SPECIAL=1;
 					SPECIAL_HELD=1;
 				}
-				if (((PAD[PAD_A][0]==0)||(PAD[PAD_SELECT][0]==0))&&(SPECIAL_HELD==1)) SPECIAL_HELD=0;
+				if (((PAD[PAD_L][0]==0)||(PAD[PAD_SELECT][0]==0))&&(SPECIAL_HELD==1)) SPECIAL_HELD=0;
+				
+				if ((PAD[PAD_DOWN][0]==1)&&(RAPID_HELD==0)&&(PAD[PAD_SELECT][0]==1)){
+					if(RAPIDMAX==30) RAPIDMAX=60; else RAPIDMAX=30;
+					RAPID_HELD=1;
+				}
+				if (((PAD[PAD_DOWN][0]==0)||(PAD[PAD_SELECT][0]==0))&&(RAPID_HELD==1)) RAPID_HELD=0;
 				C64_PORT[0]=0;
 				C64_PORT[1]=0;
 				A=0;
@@ -825,21 +832,19 @@ uint8_t EXREG;
 					}
 					if (((PAD[PAD_UP][A]==0)||(PAD[PAD_SELECT][A]==0))&&(DISABLE_HELD[A]==1)) DISABLE_HELD[A]=0;
 					
-					
-						
-					if ((PAD[PAD_UP][A]==1)&&(DISABLE_UP[A]==0)&&(PAD[PAD_SELECT][A]==0)) C64_PORT[B]=C64_PORT[B]|CP_UP;
-					if ((PAD[PAD_B][A]==1)&&(PAD[PAD_SELECT][A]==0)) C64_PORT[B]=C64_PORT[B]|CP_UP;
-					if (PAD[PAD_DOWN][A]==1) C64_PORT[B]=C64_PORT[B]|CP_DOWN;
-					if (PAD[PAD_LEFT][A]==1) C64_PORT[B]=C64_PORT[B]|CP_LEFT;
-					if (PAD[PAD_RIGHT][A]==1) C64_PORT[B]=C64_PORT[B]|CP_RIGHT;					
-					if ((PAD[PAD_Y][A]==1)&&(PAD[PAD_SELECT][A]==0)) C64_PORT[B]=C64_PORT[B]|CP_FIRE;
-					if ((PAD[PAD_A][A]==1)&&(PAD[PAD_SELECT][A]==0)) {
-						C64_PORT[B]=C64_PORT[B]|SPECIAL|CP_FIRE;
-					}
-					if ((PAD[PAD_X][A]==1)&&(PAD[PAD_SELECT][A]==0)) C64_PORT[B]=C64_PORT[B]|((RAPIDSTATE&4)<<2);
-					
-					//if (SWAP!=A) C64_FIRE[A]=C64_FIRE[A]*2;
 					if (PAD[PAD_SELECT][A]==1) SetLED(1);
+					else{	
+						if ((PAD[PAD_UP][A]==1)&&(DISABLE_UP[A]==0)&&(PAD[PAD_SELECT][A]==0)) C64_PORT[B]=C64_PORT[B]|CP_UP;
+						if ((PAD[PAD_B][A]==1)&&(PAD[PAD_SELECT][A]==0)) C64_PORT[B]=C64_PORT[B]|CP_UP;
+						if (PAD[PAD_DOWN][A]==1) C64_PORT[B]=C64_PORT[B]|CP_DOWN;
+						if (PAD[PAD_LEFT][A]==1) C64_PORT[B]=C64_PORT[B]|CP_LEFT;
+						if (PAD[PAD_RIGHT][A]==1) C64_PORT[B]=C64_PORT[B]|CP_RIGHT;					
+						if ((PAD[PAD_Y][A]==1)&&(PAD[PAD_SELECT][A]==0)) C64_PORT[B]=C64_PORT[B]|CP_FIRE;
+						if ((PAD[PAD_A][A]==1)&&(PAD[PAD_SELECT][A]==0)) C64_PORT[B]=C64_PORT[B]|SPECIAL|CP_FIRE;
+						if ((PAD[PAD_X][A]==1)&&(PAD[PAD_SELECT][A]==0)) C64_PORT[B]=C64_PORT[B]|((RAPIDSTATE&4)<<2);
+					}
+					//if (SWAP!=A) C64_FIRE[A]=C64_FIRE[A]*2;
+					
 					
 						//C64_PORT[B]=C64_PORT[B]*16;
 						
@@ -938,7 +943,7 @@ uint8_t EXREG;
 void ReadPads(void){
 uint8_t i;	
 	RAPID++;
-	if (RAPID>EXREGS[RAPIDMAX]){
+	if (RAPID>RAPIDMAX){
 		RAPID=0;
 		RAPIDSTATE=RAPIDSTATE^12;
 	}
