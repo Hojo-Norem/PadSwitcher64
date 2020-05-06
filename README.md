@@ -9,6 +9,8 @@ Also, the interface allows up to four custom mappings to be programmed using a C
 This code was originally developed for the Atmel ATMega8 mcu and was then later ported over to the ATMega88.  This was mainly due to the availiablilty of the Mega8 and that the Mega88 has more power saving features.
 
 This source code was written using AVR-GCC and AVR Libc.
+
+**A pre-compiled HEX file for the AVR and the C64-side software for setting the custom mappings can be found in the releases section.**
 	
 # TODO :
   * Re-jig command mode for potential compatibility with non-C64 Atari joystick compatible machines.
