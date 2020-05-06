@@ -36,10 +36,11 @@ This source code was written using AVR-GCC and AVR Libc.
 # Fixed Controls:
 |Button/Combo|Function|
 |---|---|
-|SELECT + UP|TOGGLE DISABLE DPAD UP|
-|START|SWAP CONTROL PORTS|
-|SELECT + L|Swap 'Special' function|
+|SELECT + UP|Toggle disable of D-PAD UP|
+|START|Swap Joystick control port|
+|SELECT + L|Toggle 'Special' function|
 |SELECT + R|Change keyboard matrix line (*3)|
+|SELECT + DOWN|Toggle TURBO FIRE rate|
 |SELECT + (A,B,X,Y)|Select mapping| 
 |SELECT + START|Default Mapping|	
 |SELECT + START|Enter Command Mode (*4)| 
