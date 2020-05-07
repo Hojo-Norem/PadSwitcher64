@@ -28,7 +28,9 @@
 				
 	************************************
 	
-	hardware and software design my Hojo Norem.
+	V1.1
+	
+	Hardware and software design my Hojo Norem.
 	
 	*2018*
 
@@ -59,8 +61,6 @@
 	TODO :
 		* Re-jig command mode for potential compatibility with non-C64 Atari joystick
 		  compatible machines.
-		* Maybe figure out how to support two pads while still retaining some semblence 
-		  of mapping support.
 
 	
 	Pad Mappinng: (default)
@@ -196,22 +196,22 @@
 
 
 // SNES Pad buttons
-#define PAD_B 0
-#define PAD_Y 1
-#define PAD_SELECT 2
-#define PAD_START 3
-#define PAD_UP 4
-#define PAD_DOWN 5
-#define PAD_LEFT 6
-#define PAD_RIGHT 7
-#define PAD_A 8
-#define PAD_X 9
-#define PAD_L 10
-#define PAD_R 11
-#define PAD_CONFIG1 12
-#define PAD_CONFIG2 13
-#define PAD_L2 14
-#define PAD_R2 15
+#define PAD_B 1
+#define PAD_Y 2
+#define PAD_SELECT 4
+#define PAD_START 8
+#define PAD_UP 16
+#define PAD_DOWN 32
+#define PAD_LEFT 64
+#define PAD_RIGHT 128
+#define PAD_A 256
+#define PAD_X 512
+#define PAD_L 1024
+#define PAD_R 2048
+#define PAD_CONFIG1 4096
+#define PAD_CONFIG2 8192
+#define PAD_L2 16384
+#define PAD_R2 32768
 
 // C64 Control port lines
 #define CP_UP 1
@@ -239,14 +239,6 @@
 
 
 
-
-volatile uint8_t PAD[17][2];
-volatile uint8_t DISABLE_UP[2];
-volatile uint8_t DISABLE_HELD[2];
-volatile uint8_t C64_PORT[2];
-//volatile uint8_t C64_FIRE[2];
-volatile uint8_t TWO_PADS;
-
 volatile uint8_t MAPPINGS[4][6][2];
 
 volatile uint8_t EXREGS[EXREGCOUNT];
@@ -259,8 +251,8 @@ uint8_t ee_EEPROM_INIT __attribute__((section(".eeprom")));
 
 volatile uint8_t tick;
 
-	
-
+uint16_t PAD;	
+uint8_t	PADPUSHED;
 uint16_t RAPID;
 uint8_t RAPIDSTATE;
 uint8_t RAPIDMAX;
@@ -288,16 +280,12 @@ ISR(TIMER0_COMPA_vect)
 
 void main(void)
 {
-uint8_t MATRIX_HELD;
-uint8_t	SWAP_HELD;
-uint8_t SPECIAL_HELD;
-uint8_t RAPID_HELD;
+
 uint8_t MATRIX;
 uint8_t SWAP;
 uint8_t SPECIAL;
 uint8_t A;
 uint8_t B;
-uint8_t C;
 uint8_t D;
 uint8_t error;
 uint8_t IMODE;
@@ -309,9 +297,10 @@ uint8_t MAPPING;
 uint8_t BUTTON;
 uint8_t EEPROM_INIT;
 uint8_t ISOPERAND;
-uint8_t PADSEL;
 uint8_t EXCOM;
-uint8_t EXREG;
+uint8_t DISABLE_UP;
+uint8_t C64_PORT[2];
+uint8_t MASTERHELD;
 	cli();
 	CLKPR=128;						// Set 4Mhz main clock
 	CLKPR=1;						//
@@ -331,47 +320,24 @@ uint8_t EXREG;
 	COMMAND=0;
 	
 	SNES_LATCH_LOW();
-
+	SNES_CLOCK_HIGH();
+	
 	SWAP=0;
-
+	PADPUSHED=0;
 	MATRIX=16;
-	
-	TWO_PADS=0;
-	
 	RAPID=0;
-	
 	RAPIDSTATE=4;
-	
 	SPECIAL = 2;
-	
-	SPECIAL_HELD = 0;
-	
-	RAPID_HELD=0;
-	
+
 	NEGTIMEOUT =0;
-	
 	OPERAND = 0;
-	
-	ISOPERAND=0;
-	
-	PADSEL=0;
-	
-	NEWSCAN=0;
-	
-	COMTIMEOUT=0;
-	
+	ISOPERAND=0;	
+	NEWSCAN=0;	
+	COMTIMEOUT=0;	
 	RAPIDMAX=30;
-	
-	
-	EXREG=0;
-	
-	DISABLE_UP[0]=0;
-	DISABLE_UP[1]=0;
-	DISABLE_HELD[0]=0;
-	DISABLE_HELD[1]=0;
-	
-	MATRIX_HELD=0;
-	SWAP_HELD=0;
+	DISABLE_UP=0;
+	MASTERHELD=0;
+
 	
 	EEPROM_INIT=eeprom_read_byte(&ee_EEPROM_INIT);
 	if(EEPROM_INIT==64){
@@ -429,514 +395,476 @@ uint8_t EXREG;
 		ReadPads();
 		
 		if(IMODE==0){
-			for(A=0;A<=1;A++){
-				if(PAD[PAD_SELECT][A]==1){
-					if(PAD[PAD_L][A]==1){
-						if((PAD[PAD_R][A]==1)&&(PAD[PAD_START][A]==1)){
-							IMODE=3;
-							PADSEL=A;
-						}
+			if((PAD&PAD_SELECT)==0){
+				if((PAD&PAD_L)==0){
+					if(((PAD&PAD_R)==0)&&((PAD&PAD_START)==0)){
+						IMODE=1;
+						MASTERHELD=1;
 					}
 				}
 			}
 		}
 		if((IMODE==1)||(IMODE==2)){
-			if(PAD[PAD_SELECT][PADSEL]==1){
-				if(PAD[PAD_L][PADSEL]==1){
-					if((PAD[PAD_R][PADSEL]==1)&&(PAD[PAD_START][PADSEL]==1)){
-						IMODE=4;
+			if((PAD&PAD_SELECT)==0){
+				if((PAD&PAD_L)==0){
+					if(((PAD&PAD_R)==0)&&((PAD&PAD_START)==0)){
+						IMODE=0;
+						MASTERHELD=1;
 					}
 				}
 			}
 		}
-		if(PAD[16][PADSEL]==0){
-			if(IMODE==3) IMODE=2;
-			if(IMODE==4) IMODE=0;
-		}
-		
-		//A = ReadCP2();
-		if ((PAD[PAD_START][0]==1)&&(PAD[PAD_SELECT][0]==1)&&(IMODE==0)){
-			if((ReadCP2()==CP_FIRE)&&(MAPPING==4)){
-			/*
-				Comamnd MODE
-				-----------
-				
-				Sequence - 
-				
-					Interface will only enter mode if SELECT + START are pressed with bits 0-3 of port 2 from c64 low.
-					Interface acks C64 by pulling all of port 1 low.
-					C64 bit 4 of port 2 low and lets bit 0 go high.
-					Interface acks this by inverting port 1.
-					C64 acks this by pulling bit 0 of port 2 low and releasing bit 2.
-					Interface aks this by inverting port 1 again.
-					C64 aks this by pulling bit 2 down again.  Handshake is complete on C64 side.
-					Interface waits for port 2 bit two to go low.  When it does it releases all of port 1 high.
+		if(MASTERHELD==1){
+			if(PADPUSHED==0) MASTERHELD=0;
+		}else{
+			
+			//A = ReadCP2();
+			if (((PAD&PAD_START)==0)&&((PAD&PAD_SELECT)==0)&&(IMODE==0)){
+				if((ReadCP2()==CP_FIRE)&&(MAPPING==4)){
+				/*
+					Comamnd MODE
+					-----------
 					
-					Handshake complete.
+					Sequence - 
+					
+						Interface will only enter mode if SELECT + START are pressed with bits 0-3 of port 2 from c64 low.
+						Interface acks C64 by pulling all of port 1 low.
+						C64 bit 4 of port 2 low and lets bit 0 go high.
+						Interface acks this by inverting port 1.
+						C64 acks this by pulling bit 0 of port 2 low and releasing bit 2.
+						Interface aks this by inverting port 1 again.
+						C64 aks this by pulling bit 2 down again.  Handshake is complete on C64 side.
+						Interface waits for port 2 bit two to go low.  When it does it releases all of port 1 high.
+						
+						Handshake complete.
 
-					Interface listens for commands on port 2.
-					C64 issues commands by placing it on port 2.  pulls bit 4 HIGH to indicate a operand write.  Operands are written before commands.
-					The operand register is 8 bits wide and is written and read in nybbles.  Before each nybble written the register is shifted left four
-					bits.  After each nybble read the register is shifted right four bits.  The operand register does not wrap. 
-					Interface acks commands by pulling port 1 fire (PB4) low and for read commands places register on PB3-PB0.  Reads from interface to 
-					C64 are inverted.
-					C64 acks reply by port 2 pulling port 2 low.
-					
-					
-			*/
-				if (IMODE==0){
-					SetCP1(CP_ALL);
-					SetLED(1);
-					
-					tick=0;
-					NEGTIMEOUT=0;
-					B=0;
-					do{
-						A=ReadCP2();
-						if ((A==CP_UP)&&(B==0)){
-							B=1;
-							SetCP1(0);
-						}
-						//if ((B==1)&&((A!=CP_UP)&&(A!=CP_LEFT)))B=0;
-						if ((B==1)&&(A==CP_LEFT)){
-							B=2;
-							SetCP1(CP_ALL);
-						}
-						if ((B==2)&&(A==0))B=3;
-						if (tick==205){
-							NEGTIMEOUT++;
-							tick=0;
-						}
-					}while((B!=3)&&(NEGTIMEOUT<5));
-					
-					if(NEGTIMEOUT<5){
-						IMODE=1;
+						Interface listens for commands on port 2.
+						C64 issues commands by placing it on port 2.  pulls bit 4 HIGH to indicate a operand write.  Operands are written before commands.
+						The operand register is 8 bits wide and is written and read in nybbles.  Before each nybble written the register is shifted left four
+						bits.  After each nybble read the register is shifted right four bits.  The operand register does not wrap. 
+						Interface acks commands by pulling port 1 fire (PB4) low and for read commands places register on PB3-PB0.  Reads from interface to 
+						C64 are inverted.
+						C64 acks reply by port 2 pulling port 2 low.
+						
+						
+				*/
+					if (IMODE==0){
 						SetCP1(CP_ALL);
-						COMTIMEOUT=0;
-						EXCOM=1;
-					}else{
-						SetCP1(0);
-						SetLED(0);
-						IMODE=0;
-						error=5;
-					}
-				}
-			
-			//DDRC = 0b11111100;
-			//DDRD = 0;	
-			}
-		}
-		
-		/*
-			COMMANDS/REGISTERS (C64 > interface)
-			------------------------------------
-			
-			Command page 1
-			
-				00 - No command / ack read
-				01 - Select pad 1
-				02 - Select pad 2
-				03 - READ NYB 1:  B, Y, SELECT, START
-				04 - READ NYB 2:  UP, DOWN, LEFT, RIGHT
-				05 - READ NYB 3:  A, X, L, R
-				
-				06 - Write EEPROM
-				   (Operand = 14)
-				
-				07 - Select mapping
-				   (Operand = 0 to 3)
-				08 - Select button
-				   (Operand = 0 to 5)
-				09 - Read nybble 1
-				10 - Read nybble 2
-				11 - Read nybble 3
-				12 - Write nybble 1
-				   (Operand)
-				13 - Write nybble 2
-				   (Operand)
-				14 - write nybble 3
-				   (Operand)
-				
-				15 - Shift to command page 2
-				
-			Command page 2
-			
-				00 - No command / ack read
-				01 - Shift to command page 1
-				
-				********** currently not implemented, if ever *************
-					02 - Select extended register
-					   (Operand = register:
-											
-											
-											
-					03 - Read Extended register
-					04 - Write Extended Register
-					   (Operand*2 writes - Register written on 2nd write)
-				***********************************************************
-				
-				05 - Enter Direct Mode, type 1
-						NOTE: Not ACK'd.  Exits command mode.  C64 software should act accordingly
-						
-				06 - Enter Direct Mode, type 2
-						NOTE: Not currrently implemented, may never.
-				
-				15 - Exit command mode
-						NOTE: Not ACK'd. 
-		*/
-		
-		
-		if(IMODE==1) {
-			COMTIMEOUT++;
-			if(COMTIMEOUT>1025){		// ~5 second comunications timeout
-				SetCP1(0);
-				SetCP2(0);
-				EXCOM=1;
-				IMODE=0;
-				error=10;
-			}
-			COMMAND = ReadCP2()&CP_ALL;
-			SetLED(COMMAND&CP_FIRE);
-			if(COMMAND>=CP_FIRE) ISOPERAND=1; else ISOPERAND=0;
-			COMMAND = COMMAND&CP_DIRS;
-			
-			
-			if ((ISOPERAND==1)&&(ACKWAIT==0)){
-				OPERAND = OPERAND<<4;
-				OPERAND = OPERAND|COMMAND;
-				SetCP1(CP_FIRE);
-				SetLED(1);
-				ACKWAIT=3;
-			}
-			
-			if ((ISOPERAND==0)&&(ACKWAIT==0)){
-				SetLED(0);
-				if(EXCOM==1){
-					if((COMMAND==7)&&((OPERAND&15)<=4)){
-						MAPPING=OPERAND&15;
-						SetCP1(CP_FIRE);
-						ACKWAIT=1;
-					}
-					
-					if((COMMAND==6)&&((OPERAND&CP_DIRS)==14)){
-						SetCP1(CP_FIRE);
 						SetLED(1);
-						cli();
-						do{asm volatile ("nop");}while (!eeprom_is_ready());
-						eeprom_update_block((void*)&MAPPINGS, (void*)&ee_MAPPINGS, sizeof(MAPPINGS));
-						eeprom_update_block((void*)&EXREGS, (void*)&ee_EXREGS, sizeof(EXREGS));
-						eeprom_update_byte(&ee_EEPROM_INIT, 64);
-						sei();
-						ACKWAIT=1;
-					}
-					
-					if(COMMAND==8){
-						BUTTON=(OPERAND&15);
-						SetCP1(CP_FIRE);
-						ACKWAIT=1;
-					}
-					
-					if(COMMAND==9){
-						SetCP1((MAPPINGS[MAPPING][BUTTON][0]&15)|CP_FIRE);
-						ACKWAIT=1;
-					}
-					if(COMMAND==10){
-						SetCP1((MAPPINGS[MAPPING][BUTTON][0]>>4)|CP_FIRE);
-						ACKWAIT=1;
-					}
-					if(COMMAND==11){
-						SetCP1((MAPPINGS[MAPPING][BUTTON][1]&15)|CP_FIRE);
-						ACKWAIT=1;
-					}
-					if(COMMAND==12){
-						MAPPINGS[MAPPING][BUTTON][0]=(MAPPINGS[MAPPING][BUTTON][0]&240)|(OPERAND&15);
-						SetCP1(CP_FIRE);
-						ACKWAIT=1;
-					}
-					if(COMMAND==13){
-						MAPPINGS[MAPPING][BUTTON][0]=(MAPPINGS[MAPPING][BUTTON][0]&15)|(OPERAND<<4);
-						SetCP1(CP_FIRE);
-						ACKWAIT=1;
-					}
-					if(COMMAND==14){
-						MAPPINGS[MAPPING][BUTTON][1]=(MAPPINGS[MAPPING][BUTTON][1]&240)|(OPERAND&15);
-						SetCP1(CP_FIRE);
-						ACKWAIT=1;
-					}
-
-			
-				
-				
-					if(COMMAND==15){
-						SetCP1(CP_FIRE);
-						EXCOM=4;
-						ACKWAIT=1;
-					}
-					
-					if((COMMAND==1)||(COMMAND==2)){
-						PADSEL=COMMAND-1;
-						SetCP1(CP_FIRE);
-						//ReadPads();
-						//AUTOREAD=0;
-						ACKWAIT=1;
-					}
-
 						
-					
-					if((COMMAND>=3)&&(COMMAND<=5)){
-						//if((AUTOREAD==1)&&(COMMAND==3)){
-						//	ReadPads();
-						//}
+						tick=0;
+						NEGTIMEOUT=0;
 						B=0;
-						C=1;
-						D=(COMMAND-3)*4;
-						for (A=0;A<=3;A++){
-							B=B+(PAD[A+D][PADSEL]*C);
-							C=C*2;
-						}
-						SetCP1(B|CP_FIRE);
-						ACKWAIT=1;
-						//AUTOREAD=1;
-					}
-				}
-				if(EXCOM==2){
-				
-					if(COMMAND==1){
-						SetCP1(CP_FIRE);
-						EXCOM=3;
-						ACKWAIT=1;
-					}
-				
-					if(COMMAND==5){
-						SetCP1(0);
-						SetCP2(0);
-						IMODE=2;
-					}
+						do{
+							A=ReadCP2();
+							if ((A==CP_UP)&&(B==0)){
+								B=1;
+								SetCP1(0);
+							}
+							//if ((B==1)&&((A!=CP_UP)&&(A!=CP_LEFT)))B=0;
+							if ((B==1)&&(A==CP_LEFT)){
+								B=2;
+								SetCP1(CP_ALL);
+							}
+							if ((B==2)&&(A==0))B=3;
+							if (tick==205){
+								NEGTIMEOUT++;
+								tick=0;
+							}
+						}while((B!=3)&&(NEGTIMEOUT<1));
 						
-				
-					if(COMMAND==15){
-						SetCP1(0);
-						SetCP2(0);
-						IMODE=0;
-						EXCOM=1;
+						if(NEGTIMEOUT<1){
+							OCR0A = 8;
+							IMODE=1;
+							SetCP1(CP_ALL);
+							COMTIMEOUT=0;
+							EXCOM=1;
+						}else{
+							SetCP1(0);
+							SetLED(0);
+							IMODE=0;
+							error=5;
+						}
 					}
 				
+				//DDRC = 0b11111100;
+				//DDRD = 0;	
 				}
 			}
 			
-			if((ACKWAIT==1)||(ACKWAIT==3)){	
+			/*
+				COMMANDS/REGISTERS (C64 > interface)
+				------------------------------------
 				
-				//OUT_PORT_2=OUT_PORT_2|2;
-				ACKWAIT++;
-				COMTIMEOUT=0;
-			}
+				Command page 1
 				
-			if((ACKWAIT==2)&&(COMMAND==0)){
-				//OUT_PORT_2=4;
-				SetCP1(0);
-				ACKWAIT=0;
-				if(EXCOM>2) EXCOM=EXCOM-2;
-			}
+					00 - No command / ack read
+					01 - Select pad 1 (Non functional but acks)
+					02 - Select pad 2 (Non functional but acks)
+					03 - READ NYB 1:  B, Y, SELECT, START
+					04 - READ NYB 2:  UP, DOWN, LEFT, RIGHT
+					05 - READ NYB 3:  A, X, L, R
+					
+					06 - Write EEPROM
+					   (Operand = 14)
+					
+					07 - Select mapping
+					   (Operand = 0 to 3)
+					08 - Select button
+					   (Operand = 0 to 5)
+					09 - Read nybble 1
+					10 - Read nybble 2
+					11 - Read nybble 3
+					12 - Write nybble 1
+					   (Operand)
+					13 - Write nybble 2
+					   (Operand)
+					14 - write nybble 3
+					   (Operand)
+					
+					15 - Shift to command page 2
+					
+				Command page 2
+				
+					00 - No command / ack read
+					01 - Shift to command page 1
+					
+					********** currently not implemented, if ever *************
+						02 - Select extended register
+						   (Operand = register:
+												
+												
+												
+						03 - Read Extended register
+						04 - Write Extended Register
+						   (Operand*2 writes - Register written on 2nd write)
+					***********************************************************
+					
+					05 - Enter Direct Mode, type 1
+							NOTE: Not ACK'd.  Exits command mode.  C64 software should act accordingly
+							
+					06 - Enter Direct Mode, type 2
+							NOTE: Not currrently implemented, may never.
+					
+					15 - Exit command mode
+							NOTE: Not ACK'd. 
+			*/
+			
+			
+			if(IMODE==1) {
+				COMTIMEOUT++;
+				if(COMTIMEOUT>1025){		// ~5 second comunications timeout
+					SetCP1(0);
+					SetCP2(0);
+					EXCOM=1;
+					IMODE=0;
+					OCR0A = 19;
+					error=10;
+				}
+				COMMAND = ReadCP2()&CP_ALL;
+				SetLED(COMMAND&CP_FIRE);
+				if(COMMAND>=CP_FIRE) ISOPERAND=1; else ISOPERAND=0;
+				COMMAND = COMMAND&CP_DIRS;
+				
+				
+				if ((ISOPERAND==1)&&(ACKWAIT==0)){
+					OPERAND = OPERAND<<4;
+					OPERAND = OPERAND|COMMAND;
+					SetCP1(CP_FIRE);
+					SetLED(1);
+					ACKWAIT=1;
+				}
+				
+				if ((ISOPERAND==0)&&(ACKWAIT==0)){
+					SetLED(0);
+					switch(EXCOM){
+					case 1:
+						if((COMMAND==7)&&((OPERAND&15)<=4)){
+							MAPPING=OPERAND&15;
+							SetCP1(CP_FIRE);
+							ACKWAIT=1;
+						}
+						
+						if((COMMAND==6)&&((OPERAND&CP_DIRS)==14)){
+							SetCP1(CP_FIRE);
+							SetLED(1);
+							cli();
+							do{asm volatile ("nop");}while (!eeprom_is_ready());
+							eeprom_update_block((void*)&MAPPINGS, (void*)&ee_MAPPINGS, sizeof(MAPPINGS));
+							eeprom_update_block((void*)&EXREGS, (void*)&ee_EXREGS, sizeof(EXREGS));
+							eeprom_update_byte(&ee_EEPROM_INIT, 64);
+							sei();
+							ACKWAIT=1;
+						}
+						
+						if(COMMAND==8){
+							BUTTON=(OPERAND&15);
+							SetCP1(CP_FIRE);
+							ACKWAIT=1;
+						}
+						
+						if(COMMAND==9){
+							SetCP1((MAPPINGS[MAPPING][BUTTON][0]&15)|CP_FIRE);
+							ACKWAIT=1;
+						}
+						if(COMMAND==10){
+							SetCP1((MAPPINGS[MAPPING][BUTTON][0]>>4)|CP_FIRE);
+							ACKWAIT=1;
+						}
+						if(COMMAND==11){
+							SetCP1((MAPPINGS[MAPPING][BUTTON][1]&15)|CP_FIRE);
+							ACKWAIT=1;
+						}
+						if(COMMAND==12){
+							MAPPINGS[MAPPING][BUTTON][0]=(MAPPINGS[MAPPING][BUTTON][0]&240)|(OPERAND&15);
+							SetCP1(CP_FIRE);
+							ACKWAIT=1;
+						}
+						if(COMMAND==13){
+							MAPPINGS[MAPPING][BUTTON][0]=(MAPPINGS[MAPPING][BUTTON][0]&15)|(OPERAND<<4);
+							SetCP1(CP_FIRE);
+							ACKWAIT=1;
+						}
+						if(COMMAND==14){
+							MAPPINGS[MAPPING][BUTTON][1]=(MAPPINGS[MAPPING][BUTTON][1]&240)|(OPERAND&15);
+							SetCP1(CP_FIRE);
+							ACKWAIT=1;
+						}
 
 				
-			if((ACKWAIT==4)&&(ISOPERAND==0)){
-				//OUT_PORT_2=4;
-				SetCP1(0);
-				ACKWAIT=0;
+					
+					
+						if(COMMAND==15){
+							SetCP1(CP_FIRE);
+							EXCOM=2;
+							ACKWAIT=1;
+						}
+						
+						if((COMMAND==1)||(COMMAND==2)){
+							//PADSEL=COMMAND-1;
+							SetCP1(CP_FIRE);
+							//ReadPads();
+							//AUTOREAD=0;
+							ACKWAIT=1;
+						}
+
+							
+						
+						if((COMMAND>=3)&&(COMMAND<=5)){
+							//if((AUTOREAD==1)&&(COMMAND==3)){
+							//	ReadPads();
+							//}
+							B=0;
+							D=(COMMAND-3);
+							B=PAD>>(D*4);
+							B=B^15;
+							SetCP1(B|CP_FIRE);
+							ACKWAIT=1;
+							//AUTOREAD=1;
+						}
+						break;
+					case 2:
+					
+						if(COMMAND==1){
+							SetCP1(CP_FIRE);
+							ACKWAIT=1;
+						}
+					
+						if(COMMAND==5){
+							SetCP1(0);
+							SetCP2(0);
+							OCR0A = 19;
+							IMODE=2;
+						}
+							
+					
+						if(COMMAND==15){
+							SetCP1(0);
+							SetCP2(0);
+							IMODE=0;
+							OCR0A = 19;
+							EXCOM=1;
+						}
+						break;
+					
+					}
+				}
+				
+				if(ACKWAIT==1){
+					tick=0;
+					do{
+						B=ReadCP2();
+					}while((B!=0)&&(tick<255));
+					SetCP1(0);
+					if(tick==255) COMTIMEOUT=9999; else COMTIMEOUT=0;
+					ACKWAIT=0;
+				}
 			}
 			
-		}
-		
-		
-		
-		/*
-			DIRECT MODE: TYPE 1
-			-------------------
-	
-			SNES    Port BitDown  C64 Joy Mapping
-			Up      DC00 11110    up
-			Down    DC00 11101    down
-			Left    DC00 11011    left
-			Right   DC00 10111    right
-			Y       DC00 01111    fire
-			Start   DC00 00000    all
-			B       DC01 11110    up
-			X       DC01 11101    down
-			L       DC01 11011    left
-			R       DC01 10111    right
-			A       DC01 01111    fire
-			Select  DC01 00000    all
-		*/
-		
-		if (IMODE==2){
 			
-			C64_PORT[0]=0;
 			
-			if(PAD[PAD_UP][PADSEL]==1) C64_PORT[0]|=CP_UP;
-			if(PAD[PAD_DOWN][PADSEL]==1) C64_PORT[0]|=CP_DOWN;
-			if(PAD[PAD_LEFT][PADSEL]==1) C64_PORT[0]|=CP_LEFT;
-			if(PAD[PAD_RIGHT][PADSEL]==1) C64_PORT[0]|=CP_RIGHT;
-			if(PAD[PAD_Y][PADSEL]==1) C64_PORT[0]|=CP_FIRE;
-			if(PAD[PAD_START][PADSEL]==1) C64_PORT[0]|=CP_ALL;
+			/*
+				DIRECT MODE: TYPE 1
+				-------------------
+		
+				SNES    Port BitDown  C64 Joy Mapping
+				Up      DC00 11110    up
+				Down    DC00 11101    down
+				Left    DC00 11011    left
+				Right   DC00 10111    right
+				Y       DC00 01111    fire
+				Start   DC00 00000    all
+				B       DC01 11110    up
+				X       DC01 11101    down
+				L       DC01 11011    left
+				R       DC01 10111    right
+				A       DC01 01111    fire
+				Select  DC01 00000    all
+			*/
 			
-			C64_PORT[1]=0;
-			
-			if(PAD[PAD_B][PADSEL]==1) C64_PORT[1]|=CP_UP;
-			if(PAD[PAD_X][PADSEL]==1) C64_PORT[1]|=CP_DOWN;
-			if(PAD[PAD_L][PADSEL]==1) C64_PORT[1]|=CP_LEFT;
-			if(PAD[PAD_R][PADSEL]==1) C64_PORT[1]|=CP_RIGHT;
-			if(PAD[PAD_A][PADSEL]==1) C64_PORT[1]|=CP_FIRE;
-			if(PAD[PAD_SELECT][PADSEL]==1) C64_PORT[1]|=CP_ALL;
-			
-			SetCP2(C64_PORT[0]);
-			SetCP1(C64_PORT[1]);
-		
-			NEWSCAN=0;
-		}
-		
-		
-		
-		
-		if (IMODE==0){
-			if ((PAD[PAD_START][0]==1)&&(SWAP_HELD==0)&&(PAD[PAD_SELECT][0]==0)){
-				SWAP=SWAP^1;
-				SWAP_HELD=1;
-			}
-			if ((PAD[PAD_START][0]==0)&&(SWAP_HELD==1)) SWAP_HELD=0;
-			B=1^SWAP;
-			if(MAPPING==4){
-				
-				if ((PAD[PAD_L][0]==1)&&(SPECIAL_HELD==0)&&(PAD[PAD_SELECT][0]==1)){
-					SPECIAL=SPECIAL<<1;
-					if(SPECIAL>2) SPECIAL=1;
-					SPECIAL_HELD=1;
-				}
-				if (((PAD[PAD_L][0]==0)||(PAD[PAD_SELECT][0]==0))&&(SPECIAL_HELD==1)) SPECIAL_HELD=0;
-				
-				if ((PAD[PAD_DOWN][0]==1)&&(RAPID_HELD==0)&&(PAD[PAD_SELECT][0]==1)){
-					if(RAPIDMAX==30) RAPIDMAX=60; else RAPIDMAX=30;
-					RAPID_HELD=1;
-				}
-				if (((PAD[PAD_DOWN][0]==0)||(PAD[PAD_SELECT][0]==0))&&(RAPID_HELD==1)) RAPID_HELD=0;
-				C64_PORT[0]=0;
-				C64_PORT[1]=0;
-				A=0;
-					
-					if ((PAD[PAD_UP][A]==1)&&(DISABLE_HELD[A]==0)&&(PAD[PAD_SELECT][A]==1)){
-						if (DISABLE_UP[A]==0){
-							DISABLE_UP[A]=1;
-						}else{
-							DISABLE_UP[A]=0;
-						}
-						DISABLE_HELD[A]=1;
-					}
-					if (((PAD[PAD_UP][A]==0)||(PAD[PAD_SELECT][A]==0))&&(DISABLE_HELD[A]==1)) DISABLE_HELD[A]=0;
-					
-					if (PAD[PAD_SELECT][A]==1) SetLED(1);
-					else{	
-						if ((PAD[PAD_UP][A]==1)&&(DISABLE_UP[A]==0)&&(PAD[PAD_SELECT][A]==0)) C64_PORT[B]=C64_PORT[B]|CP_UP;
-						if ((PAD[PAD_B][A]==1)&&(PAD[PAD_SELECT][A]==0)) C64_PORT[B]=C64_PORT[B]|CP_UP;
-						if (PAD[PAD_DOWN][A]==1) C64_PORT[B]=C64_PORT[B]|CP_DOWN;
-						if (PAD[PAD_LEFT][A]==1) C64_PORT[B]=C64_PORT[B]|CP_LEFT;
-						if (PAD[PAD_RIGHT][A]==1) C64_PORT[B]=C64_PORT[B]|CP_RIGHT;					
-						if ((PAD[PAD_Y][A]==1)&&(PAD[PAD_SELECT][A]==0)) C64_PORT[B]=C64_PORT[B]|CP_FIRE;
-						if ((PAD[PAD_A][A]==1)&&(PAD[PAD_SELECT][A]==0)) C64_PORT[B]=C64_PORT[B]|SPECIAL|CP_FIRE;
-						if ((PAD[PAD_X][A]==1)&&(PAD[PAD_SELECT][A]==0)) C64_PORT[B]=C64_PORT[B]|((RAPIDSTATE&4)<<2);
-					}
-					//if (SWAP!=A) C64_FIRE[A]=C64_FIRE[A]*2;
-					
-					
-						//C64_PORT[B]=C64_PORT[B]*16;
-						
-						if ((PAD[PAD_A][A]==1)&&(PAD[PAD_SELECT][A]==1)) MAPPING=0;
-						if ((PAD[PAD_B][A]==1)&&(PAD[PAD_SELECT][A]==1)) MAPPING=1;
-						if ((PAD[PAD_X][A]==1)&&(PAD[PAD_SELECT][A]==1)) MAPPING=2;
-						if ((PAD[PAD_Y][A]==1)&&(PAD[PAD_SELECT][A]==1)) MAPPING=3;
-					if (SWAP==A){	
-						if ((PAD[PAD_SELECT][A]==1)&&(MATRIX_HELD==0)&&(PAD[PAD_R][A]==1)){
-							MATRIX=MATRIX<<1;
-							if (MATRIX>16) MATRIX=1;
-							MATRIX_HELD=1;
-						}
-						if (((PAD[PAD_SELECT][A]==0)||(PAD[PAD_R][A]==0))&&(MATRIX_HELD==1)) MATRIX_HELD=0;
-						
-						if ((PAD[PAD_R][A]==1)&&(TWO_PADS==0)&&(SWAP==0)&&(PAD[PAD_SELECT][A]==0)) C64_PORT[0]=C64_PORT[0]|MATRIX;
-						
-					}
-				
-			}else{
-				if ((PAD[PAD_A][0]==1)&&(PAD[PAD_SELECT][0]==1)) MAPPING=0;
-				if ((PAD[PAD_B][0]==1)&&(PAD[PAD_SELECT][0]==1)) MAPPING=1;
-				if ((PAD[PAD_X][0]==1)&&(PAD[PAD_SELECT][0]==1)) MAPPING=2;
-				if ((PAD[PAD_Y][0]==1)&&(PAD[PAD_SELECT][0]==1)) MAPPING=3;
-				if((PAD[PAD_START][0]==1)&&(PAD[PAD_SELECT][0]==1)) MAPPING=4;
-				
-				if ((PAD[PAD_UP][0]==1)&&(DISABLE_HELD[0]==0)&&(PAD[PAD_SELECT][0]==1)){
-					if (DISABLE_UP[0]==0){
-						DISABLE_UP[0]=1;
-					}else{
-						DISABLE_UP[0]=0;
-					}
-					DISABLE_HELD[0]=1;
-				}
-				if (((PAD[PAD_UP][0]==0)||(PAD[PAD_SELECT][0]==0))&&(DISABLE_HELD[0]==1)) DISABLE_HELD[0]=0;
+			if (IMODE==2){
 				
 				C64_PORT[0]=0;
+				
+				if((PAD&PAD_UP)==0) C64_PORT[0]|=CP_UP;
+				if((PAD&PAD_DOWN)==0) C64_PORT[0]|=CP_DOWN;
+				if((PAD&PAD_LEFT)==0) C64_PORT[0]|=CP_LEFT;
+				if((PAD&PAD_RIGHT)==0) C64_PORT[0]|=CP_RIGHT;
+				if((PAD&PAD_Y)==0) C64_PORT[0]|=CP_FIRE;
+				if((PAD&PAD_START)==0) C64_PORT[0]|=CP_ALL;
+				
 				C64_PORT[1]=0;
-				if(PAD[PAD_SELECT][0]==0){
-					if ((PAD[PAD_UP][0]==1)&&(DISABLE_UP[0]==0)) C64_PORT[B]=C64_PORT[B]|CP_UP;
-					if (PAD[PAD_DOWN][0]==1) C64_PORT[B]=C64_PORT[B]|CP_DOWN;
-					if (PAD[PAD_LEFT][0]==1) C64_PORT[B]=C64_PORT[B]|CP_LEFT;
-					if (PAD[PAD_RIGHT][0]==1) C64_PORT[B]=C64_PORT[B]|CP_RIGHT;
-						
-					if (PAD[PAD_A][0]==1) {
-						if((RAPIDSTATE&(MAPPINGS[MAPPING][0][1]&12))==0){
-							C64_PORT[0]=C64_PORT[0]|(MAPPINGS[MAPPING][0][0]&15)|((MAPPINGS[MAPPING][0][1]&1)<<4);
-							C64_PORT[1]=C64_PORT[1]|((MAPPINGS[MAPPING][0][0]&240)>>4)|((MAPPINGS[MAPPING][0][1]&2)<<3);
-						}
-					}
-					if (PAD[PAD_B][0]==1) {
-						if((RAPIDSTATE&(MAPPINGS[MAPPING][1][1]&12))==0){
-							C64_PORT[0]=C64_PORT[0]|(MAPPINGS[MAPPING][1][0]&15)|((MAPPINGS[MAPPING][1][1]&1)<<4);
-							C64_PORT[1]=C64_PORT[1]|((MAPPINGS[MAPPING][1][0]&240)>>4)|((MAPPINGS[MAPPING][1][1]&2)<<3);
-						}
-					}
-					if (PAD[PAD_X][0]==1) {
-						if((RAPIDSTATE&(MAPPINGS[MAPPING][2][1]&12))==0){
-							C64_PORT[0]=C64_PORT[0]|(MAPPINGS[MAPPING][2][0]&15)|((MAPPINGS[MAPPING][2][1]&1)<<4);
-							C64_PORT[1]=C64_PORT[1]|((MAPPINGS[MAPPING][2][0]&240)>>4)|((MAPPINGS[MAPPING][2][1]&2)<<3);
-						}
-					}
-					if (PAD[PAD_Y][0]==1) {
-						if((RAPIDSTATE&(MAPPINGS[MAPPING][3][1]&12))==0){
-							C64_PORT[0]=C64_PORT[0]|(MAPPINGS[MAPPING][3][0]&15)|((MAPPINGS[MAPPING][3][1]&1)<<4);
-							C64_PORT[1]=C64_PORT[1]|((MAPPINGS[MAPPING][3][0]&240)>>4)|((MAPPINGS[MAPPING][3][1]&2)<<3);
-						}
-					}
-					if (PAD[PAD_L][0]==1) {
-						if((RAPIDSTATE&(MAPPINGS[MAPPING][4][1]&12))==0){
-							C64_PORT[0]=C64_PORT[0]|(MAPPINGS[MAPPING][4][0]&15)|((MAPPINGS[MAPPING][4][1]&1)<<4);
-							C64_PORT[1]=C64_PORT[1]|((MAPPINGS[MAPPING][4][0]&240)>>4)|((MAPPINGS[MAPPING][4][1]&2)<<3);
-						}
-					}
-					if (PAD[PAD_R][0]==1) {
-						if((RAPIDSTATE&(MAPPINGS[MAPPING][5][1]&12))==0){
-							C64_PORT[0]=C64_PORT[0]|(MAPPINGS[MAPPING][5][0]&15)|((MAPPINGS[MAPPING][5][1]&1)<<4);
-							C64_PORT[1]=C64_PORT[1]|((MAPPINGS[MAPPING][5][0]&240)>>4)|((MAPPINGS[MAPPING][5][1]&2)<<3);
-						}
-					}
-				}
-				// use spiffy new putput subroutines here
+				
+				if((PAD&PAD_B)==0) C64_PORT[1]|=CP_UP;
+				if((PAD&PAD_X)==0) C64_PORT[1]|=CP_DOWN;
+				if((PAD&PAD_L)==0) C64_PORT[1]|=CP_LEFT;
+				if((PAD&PAD_R)==0) C64_PORT[1]|=CP_RIGHT;
+				if((PAD&PAD_A)==0) C64_PORT[1]|=CP_FIRE;
+				if((PAD&PAD_SELECT)==0) C64_PORT[1]|=CP_ALL;
+				
+				SetCP2(C64_PORT[0]);
+				SetCP1(C64_PORT[1]);
+			
+				
 			}
 			
-			SetCP2(C64_PORT[1]);
-			SetCP1(C64_PORT[0]);
-			
-			SetLED(SWAP);
 			
 			
+			
+			if (IMODE==0){
+				C64_PORT[0]=0;
+				C64_PORT[1]=0;
+				
+				if((PAD&PAD_SELECT)==0){
+					if ((PAD&PAD_DOWN)==0){
+						if(RAPIDMAX==30) RAPIDMAX=60; else RAPIDMAX=30;
+						MASTERHELD=1;
+					}
+					if ((PAD&PAD_UP)==0){
+						if (DISABLE_UP==0) DISABLE_UP=1; else DISABLE_UP=0;
+						MASTERHELD=1;
+					}
+					if ((PAD&PAD_A)==0){MAPPING=0;MASTERHELD=1;}
+					if ((PAD&PAD_B)==0){MAPPING=1;MASTERHELD=1;}
+					if ((PAD&PAD_X)==0){MAPPING=2;MASTERHELD=1;}
+					if ((PAD&PAD_Y)==0){MAPPING=3;MASTERHELD=1;}
+					if ((PAD&PAD_START)==0){MAPPING=4;MASTERHELD=1;}		
+				}
+				
+				if (((PAD&PAD_START)==0)&&((PAD&PAD_SELECT)!=0)){
+					SWAP=SWAP^1;
+					MASTERHELD=1;
+				}
+				B=1^SWAP;
+					
+
+
+
+				if(MAPPING==4){
+
+					if ((PAD&PAD_SELECT)==0){
+						if((PAD&PAD_START)!=0){
+							if (SWAP==0){	
+								if ((PAD&PAD_R)==0){
+									MATRIX=MATRIX<<1;
+									if (MATRIX>16) MATRIX=1;
+									MASTERHELD=1;
+								}	
+							}
+							if ((PAD&PAD_L)==0){
+								SPECIAL=SPECIAL<<1;
+								if(SPECIAL>2) SPECIAL=1;
+								MASTERHELD=1;
+							}
+						}
+						SetLED(1);
+					}else{	
+						if (((PAD&PAD_UP)==0)&&(DISABLE_UP==0)) C64_PORT[B]=C64_PORT[B]|CP_UP;
+						if ((PAD&PAD_B)==0) C64_PORT[B]=C64_PORT[B]|CP_UP;
+						if ((PAD&PAD_DOWN)==0) C64_PORT[B]=C64_PORT[B]|CP_DOWN;
+						if ((PAD&PAD_LEFT)==0) C64_PORT[B]=C64_PORT[B]|CP_LEFT;
+						if ((PAD&PAD_RIGHT)==0) C64_PORT[B]=C64_PORT[B]|CP_RIGHT;					
+						if ((PAD&PAD_Y)==0) C64_PORT[B]=C64_PORT[B]|CP_FIRE;
+						if ((PAD&PAD_A)==0) C64_PORT[B]=C64_PORT[B]|SPECIAL|CP_FIRE;
+						if ((PAD&PAD_X)==0) C64_PORT[B]=C64_PORT[B]|((RAPIDSTATE&4)<<2);
+						if (((PAD&PAD_R)==0)&&(SWAP==0)) C64_PORT[0]=C64_PORT[0]|MATRIX;
+					}
+					
+				}else{
+					if((PAD&PAD_SELECT)!=0){
+						if (((PAD&PAD_UP)==0)&&(DISABLE_UP==0)) C64_PORT[B]=C64_PORT[B]|CP_UP;
+						if ((PAD&PAD_DOWN)==0) C64_PORT[B]=C64_PORT[B]|CP_DOWN;
+						if ((PAD&PAD_LEFT)==0) C64_PORT[B]=C64_PORT[B]|CP_LEFT;
+						if ((PAD&PAD_RIGHT)==0) C64_PORT[B]=C64_PORT[B]|CP_RIGHT;
+							
+						if ((PAD&PAD_A)==0) {
+							if((RAPIDSTATE&(MAPPINGS[MAPPING][0][1]&12))==0){
+								C64_PORT[0]=C64_PORT[0]|(MAPPINGS[MAPPING][0][0]&15)|((MAPPINGS[MAPPING][0][1]&1)<<4);
+								C64_PORT[1]=C64_PORT[1]|((MAPPINGS[MAPPING][0][0]&240)>>4)|((MAPPINGS[MAPPING][0][1]&2)<<3);
+							}
+						}
+						if ((PAD&PAD_B)==0) {
+							if((RAPIDSTATE&(MAPPINGS[MAPPING][1][1]&12))==0){
+								C64_PORT[0]=C64_PORT[0]|(MAPPINGS[MAPPING][1][0]&15)|((MAPPINGS[MAPPING][1][1]&1)<<4);
+								C64_PORT[1]=C64_PORT[1]|((MAPPINGS[MAPPING][1][0]&240)>>4)|((MAPPINGS[MAPPING][1][1]&2)<<3);
+							}
+						}
+						if ((PAD&PAD_X)==0) {
+							if((RAPIDSTATE&(MAPPINGS[MAPPING][2][1]&12))==0){
+								C64_PORT[0]=C64_PORT[0]|(MAPPINGS[MAPPING][2][0]&15)|((MAPPINGS[MAPPING][2][1]&1)<<4);
+								C64_PORT[1]=C64_PORT[1]|((MAPPINGS[MAPPING][2][0]&240)>>4)|((MAPPINGS[MAPPING][2][1]&2)<<3);
+							}
+						}
+						if ((PAD&PAD_Y)==0) {
+							if((RAPIDSTATE&(MAPPINGS[MAPPING][3][1]&12))==0){
+								C64_PORT[0]=C64_PORT[0]|(MAPPINGS[MAPPING][3][0]&15)|((MAPPINGS[MAPPING][3][1]&1)<<4);
+								C64_PORT[1]=C64_PORT[1]|((MAPPINGS[MAPPING][3][0]&240)>>4)|((MAPPINGS[MAPPING][3][1]&2)<<3);
+							}
+						}
+						if ((PAD&PAD_L)==0) {
+							if((RAPIDSTATE&(MAPPINGS[MAPPING][4][1]&12))==0){
+								C64_PORT[0]=C64_PORT[0]|(MAPPINGS[MAPPING][4][0]&15)|((MAPPINGS[MAPPING][4][1]&1)<<4);
+								C64_PORT[1]=C64_PORT[1]|((MAPPINGS[MAPPING][4][0]&240)>>4)|((MAPPINGS[MAPPING][4][1]&2)<<3);
+							}
+						}
+						if ((PAD&PAD_R)==0) {
+							if((RAPIDSTATE&(MAPPINGS[MAPPING][5][1]&12))==0){
+								C64_PORT[0]=C64_PORT[0]|(MAPPINGS[MAPPING][5][0]&15)|((MAPPINGS[MAPPING][5][1]&1)<<4);
+								C64_PORT[1]=C64_PORT[1]|((MAPPINGS[MAPPING][5][0]&240)>>4)|((MAPPINGS[MAPPING][5][1]&2)<<3);
+							}
+						}
+					}
+					// use spiffy new putput subroutines here
+				}
+				
+				SetCP2(C64_PORT[1]);
+				SetCP1(C64_PORT[0]);
+				
+				SetLED(SWAP);
+				
+				
+			}
 		}
-		
 	}
 }
 
@@ -947,31 +875,21 @@ uint8_t i;
 		RAPID=0;
 		RAPIDSTATE=RAPIDSTATE^12;
 	}
-	PAD[16][0]=0;
-	PAD[16][1]=0;
-	SNES_CLOCK_HIGH();
-	_delay_us(4);
+	PAD=0;
+	PADPUSHED=0;
+	//PAD[16][1]=0;
 	SNES_LATCH_HIGH();
-	_delay_us(11);
+	_delay_us(12);
 	SNES_LATCH_LOW();
+	_delay_us(6);
 	for (i=0; i<=15; i++)
 	{
-		_delay_us(7);
 		SNES_CLOCK_LOW();
-		if ((SNES_DAT1_PINS&SNES_DATA_1)!=0) PAD[i][0]=0;
-		else{
-			PAD[i][0]=1;
-			PAD[16][0]=1;
-		}
-		if ((SNES_DAT2_PINS&SNES_DATA_2)!=0) PAD[i][1]=0;
-		else {
-			PAD[i][1]=1;
-			PAD[16][1]=1;
-			TWO_PADS=1;
-		}
-		_delay_us(7);
-		
+		_delay_us(6);
+		if ((SNES_DAT1_PINS&SNES_DATA_1)!=0) PAD=PAD|32768; else PADPUSHED=1;
+		if (i<15)PAD=PAD>>1;
 		SNES_CLOCK_HIGH();
+		_delay_us(6);
 	}
 }
 
