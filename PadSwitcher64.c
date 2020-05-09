@@ -28,7 +28,8 @@
 				
 	************************************
 	
-	V1.1
+	V1.1 - Added turbo fire speed toggle
+	v1.11 - Fixed being unable to enter direct mode.
 	
 	Hardware and software design my Hojo Norem.
 	
@@ -84,7 +85,7 @@
 	SELECT + UP					TOGGLE DISABLE DPAD UP
 	START 						SWAP CONTROL PORTS 
 	SELECT + A					CHANGE SPECIAL (default mapping only)
-	SELECT + X					Change TURBO FIRE speed between FAST and SLOW.  Power on default is FAST.
+	SELECT + DOWN				Change TURBO FIRE speed between FAST and SLOW.  Power on default is FAST.
 	SELECT + L					Swap 'Special' function between 'DOWN + FIRE' and 'UP + FIRE'.
 	SELECT + R					SELECT KEYBOARD MATRIX LINE (CIA 1 PB0 to PB4, PB4 default at startup, PORT 2 MODE ONLY, default mapping only)
 									PB4 = SPACE		R-SHIFT		.		M		B		C		Z		F1/F2
@@ -394,27 +395,24 @@ uint8_t MASTERHELD;
 		
 		ReadPads();
 		
-		if(IMODE==0){
+		if(MASTERHELD<2){
 			if((PAD&PAD_SELECT)==0){
 				if((PAD&PAD_L)==0){
 					if(((PAD&PAD_R)==0)&&((PAD&PAD_START)==0)){
-						IMODE=1;
-						MASTERHELD=1;
+						if(IMODE==0){
+							IMODE=2;
+							MASTERHELD=2;
+							error=2;
+						}else{
+							IMODE=0;
+							MASTERHELD=2;
+							error=2;
+						}
 					}
 				}
 			}
 		}
-		if((IMODE==1)||(IMODE==2)){
-			if((PAD&PAD_SELECT)==0){
-				if((PAD&PAD_L)==0){
-					if(((PAD&PAD_R)==0)&&((PAD&PAD_START)==0)){
-						IMODE=0;
-						MASTERHELD=1;
-					}
-				}
-			}
-		}
-		if(MASTERHELD==1){
+		if(MASTERHELD>=1){
 			if(PADPUSHED==0) MASTERHELD=0;
 		}else{
 			
@@ -1058,9 +1056,9 @@ void SetLED(uint8_t data){
 		PORTD = PORTD&254;
 	}
 }
-void SetPOTs(uint8_t data){
+/*void SetPOTs(uint8_t data){
 	
 
-}
+}*/
 
 #endif
