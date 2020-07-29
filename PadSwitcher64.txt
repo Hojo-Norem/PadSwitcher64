@@ -1,0 +1,515 @@
+	{step:10}
+	rem@ m
+	rem@ 02
+	POKE 53280,0:POKE 53281,0
+	DIM pd%(4)
+	dim pw%(4)
+	
+	for a=0 to 3
+	pw%(a+1)=2^a
+	next a
+
+	OP=56320
+	IP=56321
+	cr=55296
+	
+	bx = 3
+	by = 13
+	
+
+
+{:restart}
+	GOSUB {:printtop}
+	     '1234567890123456789012345678901234567890
+	print"{yellow}i.face test and  programming application{up}"
+	print"            *2018*  jcomcp"
+	
+	print"            hardware design,"
+	print"       microcontroller & c64 code"
+	print"             by hojo norem"
+	print"                {black}john moore{white}"
+	print"  do not press any keyboard keys while"
+	print"          using this software"
+	PRINT"{down}{gray3}  PRESS {red}SELECT {gray3}& {red}START  {gray3}ON CONTROL PAD{down}"
+	print"        or press {red}fire{gray3} on port {blue}2{gray3}"
+	print"       for standard joystick test"
+	POKE 56334,PEEK(56334) AND 254
+	
+	gosub {:handshake}
+	if RP=0 then goto {:joytest}
+	
+	cm=1:gosub {:communicate}
+	gosub {:padclear}
+{:mainmenu}
+	GOSUB {:printtop}
+	PRINT"{white}OPTIONS {gray3}:{down}"
+	PRINT"   {yellow}B{white} - {gray3}TEST PADS{down}"
+	PRINT"   {green}Y{white} - {gray3}SET MAPPINGS{down}{down}"
+	print"   {red}select {gray3}& {red}start{gray3} - write eeprom{down}{down}"
+	PRINT"   {blue}X{white} - {gray3}exit I.face command mode & quit{down:2}"
+{:menuloop}
+	gosub {:readpad}
+	IF (pd%(1)and1)=1 THEN GOSUB {:testpad}:gosub {:padclear}:GOTO {:mainmenu}
+	IF (pd%(1)and2)=2 THEN GOSUB {:editmappings}:gosub {:padclear}:GOTO {:mainmenu}
+	if (pd%(1)and12)=12 then gosub {:dotheeeprom}:gosub {:padclear}:goto {:menuloop}
+	IF (pd%(3)and2)=2 THEN GOTO {:quit}
+	GOTO {:menuloop}
+{:testpad}
+	GOSUB {:printtop}
+	PRINT"  PAD TEST:"
+	print"  ({red}SELECT {gray3}& {red}START{gray3} TO EXIT){down}{gray2}"
+	PRINT"         S"
+	PRINT"         E  S           R"
+	PRINT"         L  T     D  L  I"
+	PRINT"         E  A     O  E  G"
+	PRINT"         C  R  U  W  F  H"
+	PRINT"   {yellow}B  {green}Y  {gray2}T  T  P  N  T  T  {red}A  {blue}X  {gray2}L  R{white}"
+	PRINT"  {shft}CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC{lift}"
+	PRINT
+{:testloop}
+	cm=1:gosub {:communicate}
+	GOSUB {:readpad}
+	print "{gray3}   ";
+	forb=1 to 3
+	
+	if (pd%(b)and pw%(1))=pw%(1) then PRINT "{white}{shft}q  ";
+	if (pd%(b)and pw%(1))=0 then print"{gray1}{shft}w  ";
+	if (pd%(b)and pw%(2))=pw%(2) then PRINT "{white}{shft}q  ";
+	if (pd%(b)and pw%(2))=0 then print"{gray1}{shft}w  ";
+	if (pd%(b)and pw%(3))=pw%(3) then PRINT "{white}{shft}q  ";
+	if (pd%(b)and pw%(3))=0 then print"{gray1}{shft}w  ";
+	if (pd%(b)and pw%(4))=pw%(4) then PRINT "{white}{shft}q  ";
+	if (pd%(b)and pw%(4))=0 then print"{gray1}{shft}w  ";
+	
+	next b
+	'print
+	'print"{down}{gray3}P2:";
+	IF (pd%(1)and12)=12 THEN gosub {:padclear}:RETURN
+	'cm=2:gosub {:communicate}
+	'gosub {:readpad}
+	'forb=1 to 3
+	'if (pd%(b)and pw%(1))=pw%(1) then PRINT "{white}{shft}q  ";
+	'if (pd%(b)and pw%(1))=0 then print"{gray1}{shft}w  ";
+	'if (pd%(b)and pw%(2))=pw%(2) then PRINT "{white}{shft}q  ";
+	'if (pd%(b)and pw%(2))=0 then print"{gray1}{shft}w  ";
+	'if (pd%(b)and pw%(3))=pw%(3) then PRINT "{white}{shft}q  ";
+	'if (pd%(b)and pw%(3))=0 then print"{gray1}{shft}w  ";
+	'if (pd%(b)and pw%(4))=pw%(4) then PRINT "{white}{shft}q  ";
+	'if (pd%(b)and pw%(4))=0 then print"{gray1}{shft}w  ";
+	'next b
+	PRINT:PRINT"{up}";
+	
+	GOTO {:testloop}
+{:quit}
+	PRINT "{clear}"
+	cm=15:gosub {:communicate}
+	POKE OP,15
+	forq=1 to 1000:next q
+	POKE OP,255
+	
+	POKE 56334,PEEK(56334) OR 1
+	END
+{:printtop}
+	PRINT"{clear}{white}{shft}U{lift}{$c0:38}{shft}I"
+	PRINT"{up}{shft}B{lift}            {lt. green}PADSWITCHER 64           {white} {shft}B{lift}{up}"
+	PRINT"{white}{shft}J{lift}{$c0:38}{shft}K"
+	RETURN
+{:editmappings}
+	GOSUB {:printtop}
+	     '1234567890123456789012345678901234567890
+	print" {red}note: {gray3}mappings need to be uploaded to"
+	print"       interface memory before they can"
+	print"       be written to eeprom.{down}"
+	print"       all edited mappings are written"
+	print"       to eeprom in one operation.{down}"
+	print"       mappings are effective upon"
+	print"       upload and will only remain in"
+	print"       memory until power off if not"
+	print"       written to eeprom."
+	print"{down}       active mapping will be switched"
+	print"       to default on exit."
+	gosub {:padclear}
+	PRINT" {down}{down}{gray3}SELECT MAPPING TO LOAD  ({red}A{gray3}, {yellow}B{gray3}, {blue}X {gray3}OR {green}Y{gray3})"
+	ms=4
+{:mapselloop}
+	gosub {:readpad}
+	if (pd%(3)and1)=1 then ms=0:goto {:mapscreen}
+	if (pd%(1)and1)=1 then ms=1:goto {:mapscreen}
+	if (pd%(3)and2)=2 then ms=2:goto {:mapscreen}
+	if (pd%(1)and2)=2 then ms=3:goto {:mapscreen}
+	goto {:mapselloop}
+{:mapscreen}
+	gosub {:padclear}
+	gosub {:printtop}
+	print" {up}{gray3}({white}d-pad{gray3})select bit  ({yellow}b{gray3})toggle ({green}y{gray3})upload"
+	print"  ({blue}x{gray3})exit"
+	print"{white}{shft}uccccccccccccccc{cmdr}r{shft}ccccccccccccccc{cmdr}r{shft}cccccci{lift}"
+	     '1234567890123456789012345678901234567890
+	print"{up}{shft}b{lift}{gray3}CP1 & KB matrix{white}{shft}b{lift}{gray3}control port 2 {white}{shft}b{lift}{gray1} T  {rvrs on}T{rvrs off} {white}{shft}b"
+	print"{up}{shft}b{lift}{gray1}     d  l  r  f{white}{shft}b{lift}{gray1}    d  l  r  f {white}{shft}b{lift}{gray1} u  {rvrs on}u{rvrs off} {white}{shft}b"
+	print"{up}{shft}b{lift} {brown}1{gray1}  {brown}{back arrow}{gray1}o{brown}ct{gray1}e {brown}2{gray1}i{brown}sp{gray1}i{white}{shft}b{lift}{gray1}    o  e  i  i {white}{shft}b{lift}{gray1} r  {rvrs on}r{rvrs off} {white}{shft}b"
+	print"{up}{shft}b{lift} {brown}{pound}{gray1}u {brown}*{gray1}w {brown};{gray1}f{brown}ch{gray1}g{brown}rs{gray1}r{white}{shft}b{lift}{gray1} u  w  f  g  r {white}{shft}b{lift}{gray1} b  {rvrs on}b{rvrs off} {white}{shft}b"
+	print"{up}{shft}b{lift} {brown}+{gray1}p {brown}p{gray1}n {brown}l{gray1}t {brown}-{gray1}t {brown}.{gray1}e{white}{shft}b{lift}{gray1} p  n  t  t  e {white}{shft}b{lift}{gray1} o  {rvrs on}o{rvrs off} {white}{shft}b"
+	print"{up}{white}{shft}j{cmdr}r{shft}CcCCCccccccCCC{cmdr}e{shft}CCCCCcccccccccc{cmdr}e{shft}cccccCk"
+	print"{up} {shft}b"
+	print"{red}A{white}{shft}b{lift}"
+	print" {shft}b"
+	print"{yellow}B{white}{shft}b{lift}"
+	print" {shft}b"
+	print"{blue}X{white}{shft}b{lift}"
+	print" {shft}b"
+	print"{green}Y{white}{shft}b{lift}"
+	print" {shft}b"
+	print"{gray2}L{white}{shft}b{lift}"
+	print" {shft}b"
+	print"{gray2}R{white}{shft}b{lift}"
+	
+	
+
+	cm=ms+16:gosub {:communicate}
+	
+	cm=7:gosub {:communicate}
+	
+	
+	
+	fora=1 to 6
+
+	cm=(a-1)+16:gosub {:communicate}
+
+	cm=8:gosub {:communicate}
+
+	cm=9:gosub {:communicate}
+	cy=(by+((a-1)*2))
+	my=cy*40
+	cx=bx
+	forb=1 to 4
+
+	c=pw%(b)
+	d=cx+my
+	gosub {:setupcurse}
+	if (rp and c) <> c then goto {:notthisbit}
+	poke 1024+d,81:poke 55296+d,1
+	goto {:donextbit}
+{:notthisbit}
+	poke 1024+d,87:poke 55296+d,11
+{:donextbit}
+	cx=cx+3
+	next b
+	
+	cm=11:gosub {:communicate}
+	tn=rp
+	d=d+3
+	gosub {:setupcurse}
+	if (tn and 1) <> 1 then goto {:notfire1}
+	poke 1024+d,81:poke 55296+d,1
+	goto {:donefire1}
+{:notfire1}
+	poke 1024+d,87:poke 55296+d,11
+{:donefire1}
+	cx=bx+15
+	cm=10:gosub {:communicate}
+	forb=1 to 4
+	c=pw%(b)
+	d=cx+my
+	gosub {:setupcurse}
+	if (rp and c) <> c then goto {:orthisone}
+	poke 1024+d,81:poke 55296+d,1
+	goto {:donextbit2}
+{:orthisone}
+	poke 1024+d,87:poke 55296+d,11
+{:donextbit2}
+	cx=cx+3
+	next b
+	d=d+3
+	gosub {:setupcurse}
+	if (tn and 2) <> 2 then goto {:notfire2}
+	poke 1024+d,81:poke 55296+d,1
+	goto {:donefire2}
+{:notfire2}
+	poke 1024+d,87:poke 55296+d,11
+{:donefire2}
+	d=d+4
+	gosub {:setupcurse}
+	if (tn and 4) <> 4 then goto {:notturbo1}
+	poke 1024+d,81:poke 55296+d,1
+	goto {:doneturbo1}
+{:notturbo1}
+	poke 1024+d,87:poke 55296+d,11
+{:doneturbo1}
+	d=d+3
+	gosub {:setupcurse}
+	if (tn and 8) <> 8 then goto {:notturbo2}
+	poke 1024+d,81:poke 55296+d,1
+	goto {:doneturbo2}
+{:notturbo2}
+	poke 1024+d,87:poke 55296+d,11
+{:doneturbo2}
+	next a
+	
+	cx=bx
+	cy=by
+	cp=0
+{:editloop}
+	dm=1
+	gosub {:drawcurse}
+
+{:controlloop}
+	gosub {:readpad}
+	if pd%(4)=0 then cp=0:goto {:controlloop}
+	if pd%(4)<>0 and cp>0 and cp<20 then cp=cp+1:goto {:controlloop}
+	if pd%(4)<>0 and cp<1 then cp=1
+	if cp=20 then cp=cp-1
+	if pd%(2)=4 and cx>bx and (cx<=30 or cx=37) then cx=cx-3:dm=0:gosub {:drawcurse}:goto {:editloop}
+	if pd%(2)=4 and cx=34 then cx=cx-4:dm=0:gosub {:drawcurse}:goto {:editloop}
+	if pd%(2)=8 and (cx<30 or cx=34) then cx=cx+3:dm=0:gosub {:drawcurse}:goto {:editloop}
+	if pd%(2)=8 and cx=30 then cx=cx+4:dm=0:gosub {:drawcurse}:goto {:editloop}
+	if pd%(2)=1 and cy>13 then cy=cy-2:dm=0:gosub {:drawcurse}:goto {:editloop}
+	if pd%(2)=2 and cy<23 then cy=cy+2:dm=0:gosub {:drawcurse}:goto {:editloop}
+	if pd%(1)=1 then goto {:flipbit}
+	if pd%(1)=2 then goto {:dotheupload}
+	'if (pd%(1)and 12)=12 then goto{:dotheeeprom}
+	if pd%(3)=2 then cm=4+16:gosub {:communicate}:cm=7:gosub {:communicate}:return
+	cp=0
+	goto {:controlloop}
+{:flipbit}
+	e=cx+(cy*40)
+	if peek(1024+e)=81 then poke1024+e,87:poke cr+e,11:gosub {:padclear}:goto {:controlloop}
+	if peek(1024+e)=87 then poke1024+e,81:poke cr+e,1:gosub {:padclear}:goto {:controlloop}
+{:dotheupload}
+	dm=0:gosub {:drawcurse}
+	gosub {:padclear}
+	print"{home}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}        {red}uploading{gray3}... please wait{up}"
+	gosub {:upload}
+	fora=0to39:poke1984+a,32:poke56256+a,10:nexta
+	goto {:editloop}
+
+{:dotheeeprom}
+	'dm=0:gosub {:drawcurse}
+	gosub {:padclear}
+	print"{home}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}{down}     {red}writing eeprom{gray3}.... please wait{up}"
+	
+	cm=14+16:gosub {:communicate}
+	cm=6:gosub {:communicate}
+	
+	
+	fora=0to39:poke1984+a,32:poke56256+a,10:nexta
+	'goto {:editloop}
+return
+
+	
+{:setupcurse}
+	k=55296+d
+	poke k-41,10:poke k-40,10:poke k-39,10
+	poke k-1,10:poke k+1,10
+	poke k+39,10:poke k+40,10:poke k+41,10
+return
+
+{:drawcurse}
+	if dm=1 then goto {:fillin}
+	d=((tx-1)+((ty-1)*40))+1024
+	poke d,32:poke d+1,32:poke d+2,32
+
+	'd=(tx-1)+(ty*40)
+	poke d+40,32:poke d+42,32
+	
+	'd=(tx-1)+((ty+1)*40)
+	poke d+80,32:poke d+81,32:poke d+82,32	
+	
+return
+{:fillin}
+	tx=cx:ty=cy
+	d=((tx-1)+((ty-1)*40))+1024
+	poke d,85:poke d+1,67:poke d+2,73
+
+	'd=d+40
+	poke d+40,66:poke d+42,66
+	
+	'd=d+40
+	poke d+80,74:poke d+81,67:poke d+82,75
+	
+return
+	
+{:joytest}
+	
+	gosub {:printtop}
+	POKE 56322,128:poke 56323,0
+	poke op,127
+	  print"{white}"
+	       '1234567890123456789012345678901234567890
+print"{shft}ucccccccccccccccccc{cmdr}rr{shft}cccccccccccccccccci{lift}{white}";
+print"{shft}b{lift}{gray3} control port two {white}{shft}bb{lift} {gray3}control port one {white}{shft}b";
+print"{cmdr}q{shft}cccccccccccccccccc++cccccccccccccccccc{cmdr}w{lift}";
+for a=1 to 13
+print"{shft}b{lift}                  {shft}bb{lift}                  {shft}b{lift}";
+next a
+print"{shft}jcccccccccccccccccc{cmdr}ee{shft}cccccccccccccccccck{lift}{white}";
+print"{gray3}         press run/stop to exit"
+
+{:joytestloop}	
+	
+	
+	c2=(not peek(op)) and 31
+	c1=(not peek(ip)) and 255
+	
+	'c2=31:c1=31
+	
+	poke 646,0
+	if (c2 and 1)=1 then poke 646,7
+	poke 211,8:poke 214,9:SYS 58640:print "up"
+	poke 646,0
+	if (c2 and 2)=2 then poke 646,7
+	poke 211,7:poke 214,19:SYS 58640:print "down"
+	poke 646,0
+	if (c2 and 4)=4 then poke 646,7
+	poke 211,2:poke 214,14:SYS 58640:print "left"
+	poke 646,0
+	if (c2 and 8)=8 then poke 646,7
+	poke 211,13:poke 214,14:SYS 58640:print "right"
+	poke 646,0
+	if (c2 and 16)=16 then poke 646,7
+	poke 211,7:poke 214,14:SYS 58640:print "fire"
+
+	poke 646,0
+	if (c1 and 1)=1 then poke 646,7
+	poke 211,28:poke 214,9:SYS 58640:print "up"
+	poke 646,0
+	if (c1 and 2)=2 then poke 646,7
+	poke 211,27:poke 214,19:SYS 58640:print "down"
+	poke 646,0
+	if (c1 and 4)=4 then poke 646,7
+	poke 211,22:poke 214,14:SYS 58640:print "left"
+	poke 646,0
+	if (c1 and 8)=8 then poke 646,7
+	poke 211,33:poke 214,14:SYS 58640:print "right"
+	poke 646,0
+	if (c1 and 16)=16 then poke 646,7
+	poke 211,27:poke 214,14:SYS 58640:print "fire"
+	
+	'print"{home}{green}        "
+	'print"{home}";c1
+	if (c1 and 128)=128 then goto {:restart}
+	
+	goto {:joytestloop}
+	
+
+
+
+{:upload}
+
+	fora=1 to 6
+	cm=(a-1)+16:gosub {:communicate}
+	cm=8:gosub{:communicate}
+	bt=0:bf=0
+	uy=(by+((a-1)*2))*40
+	ux=bx
+	forb=0 to 3
+	c=2^b
+	du=ux+uy
+	if peek(1024+du)=81 then bt=bt+c
+	ux=ux+3
+	next b
+	cm=bt+16:gosub {:communicate}
+	cm=12:gosub {:communicate}
+	du=du+3
+	if peek(1024+du)=81 then bf=bf+1
+	bt=0
+	ux=bx+15
+	forb=0 to 3
+	c=2^b
+	du=ux+uy
+	if peek(1024+du)=81 then bt=bt+c
+	ux=ux+3
+	next b
+	cm=bt+16:gosub {:communicate}
+	cm=13:gosub {:communicate}
+	du=du+3
+	if peek(1024+du)=81 then bf=bf+2
+	du=du+4
+	if peek(1024+du)=81 then bf=bf+4
+	du=du+3
+	if peek(1024+du)=81 then bf=bf+8
+	cm=bf+16:gosub {:communicate}
+	cm=14:gosub {:communicate}
+	next a
+
+return
+	
+{:readpad}
+	pd%(4)=0
+	FOR A=3 TO 5
+	cm=A:gosub {:communicate}
+	pd%(a-2)=rp
+	pd%(4)=pd%(4)or rp
+	NEXT a
+	RETURN
+
+{:padclear}
+	gosub {:readpad}
+	if pd%(1)<>0 goto {:padclear}
+	if pd%(2)<>0 goto {:padclear}
+	if pd%(3)<>0 goto {:padclear}
+	return
+		
+	
+{:communicate}
+	td=0
+	poke op,cm
+{:commloop}
+	RP=PEEK(IP)AND 31
+	td=td+1
+	if td=255 then goto {:commtimeout}
+	IF (RP AND 16)<>0 THEN GOTO {:commloop}
+	rp=(not rp) and 15
+	poke op,0
+{:ackloop}
+	ac=PEEK(IP)
+	IF (ac AND 16)=0 THEN GOTO {:ackloop}
+return
+
+{:handshake}
+	POKE 56322,239:poke 56323,0
+	POKE OP,240
+{:handshakeloop}
+	A=PEEK(IP) and 31
+	RP=PEEK(OP) and 16
+	IF A<>0 and RP=16 THEN GOTO {:handshakeloop}
+	if RP=0 then return
+	POKE 53280,1
+	POKE 56322,255
+	POKE OP,1
+	A=32000
+{:hs1}
+	if a=0 goto {:commtimeout}
+	a=a-1
+	b=PEEK(IP) and 31
+	IF b=0 goto {:hs1}
+	POKE 53280,2
+	poke op,4
+	A=10000
+{:hs2}
+	if a=0 goto {:commtimeout}
+	a=a-1
+	b=PEEK(IP) and 31
+	IF b<>0 goto {:hs2}
+	POKE 53280,0
+
+	poke op,0
+	
+return
+
+
+
+{:commtimeout}
+		 
+	print"{clear}{white}{down:10} communications timeout with interface!{down:5}{gray3}"
+
+	goto {:freeze}
+           
+{:freeze}
+	POKE 56322,255:POKE OP,255
+	POKE 56334,PEEK(56334) OR 1
+	print "        hit run/stop & restore{down}"
+	print "     restart is possible with the"
+	print "            'run' command"
+{:freezed}
+	goto {:freezed}
