@@ -16,8 +16,22 @@
 	bx = 3
 	by = 13
 	
+	b=49154
+{:readasm}
+	read c
+	if c=-1 then goto {:doneasm}
+	poke b,c
+	b=b+1
+	goto {:readasm}
+{:doneasm}
 
-
+	' This little bit here patches the nopalicious routine in the machine code portion
+	' with the value poked into 50003 if 50000,50001 and 50002 are poked to 20, 16 and 128 respectively.
+	if peek(50000)<>20 then goto {:restart}
+	if peek(50001)<>64 then goto {:restart}
+	if peek(50002)<>128 then goto {:restart}
+	poke 49389,peek(50003)
+	
 {:restart}
 	GOSUB {:printtop}
 	     '1234567890123456789012345678901234567890
@@ -36,6 +50,7 @@
 	POKE 56334,PEEK(56334) AND 254
 	
 	gosub {:handshake}
+	
 	if RP=0 then goto {:joytest}
 	
 	cm=1:gosub {:communicate}
@@ -256,9 +271,9 @@
 {:controlloop}
 	gosub {:readpad}
 	if pd%(4)=0 then cp=0:goto {:controlloop}
-	if pd%(4)<>0 and cp>0 and cp<20 then cp=cp+1:goto {:controlloop}
+	if pd%(4)<>0 and cp>0 and cp<14 then cp=cp+1:goto {:controlloop}
 	if pd%(4)<>0 and cp<1 then cp=1
-	if cp=20 then cp=cp-1
+	'if cp=20 then cp=cp-1
 	if pd%(2)=4 and cx>bx and (cx<=30 or cx=37) then cx=cx-3:dm=0:gosub {:drawcurse}:goto {:editloop}
 	if pd%(2)=4 and cx=34 then cx=cx-4:dm=0:gosub {:drawcurse}:goto {:editloop}
 	if pd%(2)=8 and (cx<30 or cx=34) then cx=cx+3:dm=0:gosub {:drawcurse}:goto {:editloop}
@@ -452,48 +467,17 @@ return
 		
 	
 {:communicate}
-	td=0
-	poke op,cm
-{:commloop}
-	RP=PEEK(IP)AND 31
-	td=td+1
-	if td=255 then goto {:commtimeout}
-	IF (RP AND 16)<>0 THEN GOTO {:commloop}
-	rp=(not rp) and 15
-	poke op,0
-{:ackloop}
-	ac=PEEK(IP)
-	IF (ac AND 16)=0 THEN GOTO {:ackloop}
+
+	poke 49152,cm
+	sys 49154
+	RP=PEEK(49153)
+	if (RP and 128)=128 then goto {:commtimeout}
 return
 
 {:handshake}
-	POKE 56322,239:poke 56323,0
-	POKE OP,240
-{:handshakeloop}
-	A=PEEK(IP) and 31
-	RP=PEEK(OP) and 16
-	IF A<>0 and RP=16 THEN GOTO {:handshakeloop}
-	if RP=0 then return
-	POKE 53280,1
-	POKE 56322,255
-	POKE OP,1
-	A=32000
-{:hs1}
-	if a=0 goto {:commtimeout}
-	a=a-1
-	b=PEEK(IP) and 31
-	IF b=0 goto {:hs1}
-	POKE 53280,2
-	poke op,4
-	A=10000
-{:hs2}
-	if a=0 goto {:commtimeout}
-	a=a-1
-	b=PEEK(IP) and 31
-	IF b<>0 goto {:hs2}
-	POKE 53280,0
-
-	poke op,0
+	sys 49157 
+	RP=PEEK(49153)
+	if (RP and 128)=128 then goto {:commtimeout}
 	
 return
 
@@ -502,7 +486,6 @@ return
 {:commtimeout}
 		 
 	print"{clear}{white}{down:10} communications timeout with interface!{down:5}{gray3}"
-
 	goto {:freeze}
            
 {:freeze}
@@ -513,3 +496,42 @@ return
 	print "            'run' command"
 {:freezed}
 	goto {:freezed}
+
+' Handshake and communications machine code 'comms_unit.asm'
+' assembled and converted to DATA statements.  
+
+DATA 076,139,192,120,169,239,141
+DATA 002,220,169,000,141,003,220
+DATA 169,240,141,000,220,173,000
+DATA 220,041,016,208,005,141,001
+DATA 192,088,096,173,001,220,041
+DATA 031,208,237,032,234,192,169
+DATA 255,141,002,220,169,001,141
+DATA 000,220,162,255,160,255,173
+DATA 001,220,041,031,208,019,202
+DATA 208,246,202,136,208,242,169
+DATA 128,141,001,192,088,169,001
+DATA 141,032,208,096,032,234,192
+DATA 169,004,141,000,220,162,255
+DATA 160,255,173,001,220,041,031
+DATA 240,019,202,208,246,202,136
+DATA 208,242,169,128,141,001,192
+DATA 088,169,002,141,032,208,096
+DATA 169,000,141,032,208,032,234
+DATA 192,141,000,220,169,001,141
+DATA 001,192,088,096,120,032,234
+DATA 192,173,000,192,141,000,220
+DATA 162,255,160,255,173,001,220
+DATA 141,001,192,041,016,240,019
+DATA 202,208,243,202,136,208,239
+DATA 169,128,141,001,192,088,169
+DATA 003,141,032,208,096,173,001
+DATA 192,073,255,041,015,141,001
+DATA 192,162,255,202,208,253,169
+DATA 000,141,000,220,162,255,160
+DATA 255,173,001,220,041,016,208
+DATA 019,202,208,246,202,136,208
+DATA 242,169,128,141,001,192,169
+DATA 004,141,032,208,088,096,088
+DATA 096,162,255,160,005,202,208
+DATA 253,202,136,208,249,096,-1
