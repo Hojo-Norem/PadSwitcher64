@@ -13899,7 +13899,7 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <part name="SNES_NC1" library="wirepad" deviceset="3,17/1,1" device=""/>
 <part name="SNES_NC2" library="wirepad" deviceset="3,17/1,1" device=""/>
 <part name="SNES_GND" library="wirepad" deviceset="3,17/1,1" device=""/>
-<part name="R1" library="resistor" deviceset="R-EU_" device="0207/10" value="330"/>
+<part name="R1" library="resistor" deviceset="R-EU_" device="0207/10" value="330R"/>
 <part name="P+1" library="supply1" deviceset="+5V" device=""/>
 <part name="P+2" library="supply1" deviceset="+5V" device=""/>
 <part name="GND1" library="supply1" deviceset="GND" device=""/>

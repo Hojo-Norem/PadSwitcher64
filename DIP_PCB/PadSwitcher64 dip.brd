@@ -1683,14 +1683,14 @@ Please make sure your boards conform to these design rules.</description>
 <element name="SNES_GND" library="wirepad" package="3,17/1,1" value="" x="18.685" y="27.305" smashed="yes" rot="R180">
 <attribute name="VALUE" x="18.685" y="26.305" size="0.0254" layer="27" rot="R180"/>
 </element>
-<element name="R1" library="resistor" package="0207/10" value="330" x="20.32" y="17.78" smashed="yes" rot="R180">
+<element name="R1" library="resistor" package="0207/10" value="330R" x="20.32" y="17.78" smashed="yes" rot="R180">
 <attribute name="VALUE" x="22.5806" y="18.415" size="1.27" layer="25" ratio="10" rot="R180"/>
 </element>
 <element name="U$1" library="Mine" package="MA03-2" value="ISP" x="53.6575" y="17.78" smashed="yes" rot="R270">
 <attribute name="VALUE" x="53.49875" y="13.55725" size="1" layer="25" ratio="10" rot="R180"/>
 </element>
 <element name="U1" library="Mine" package="DIL28-3" value="ATMEGA88A-PU" x="30.48" y="17.78" smashed="yes">
-<attribute name="VALUE" x="35.75685" y="19.05" size="1.1" layer="27" ratio="10" rot="SR0"/>
+<attribute name="VALUE" x="33.0581" y="17.30375" size="1.1" layer="25" ratio="10" rot="SR0"/>
 </element>
 </elements>
 <signals>
