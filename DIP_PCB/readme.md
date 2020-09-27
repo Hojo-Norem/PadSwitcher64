@@ -2,7 +2,9 @@
 
 1 x Atmel/Microchip AVR ATMega88 in 28 pin DIP package.  Any speed grade will do.
 
-(Optional) 1 x 28 pin DIP socket
+(Optional) 1 x 28 pin DIP socket.  If you ommit this part the the resistor will need to be soldered
+  to the reverse side of the PCB, taking care to leave as little amount of leg protruding underneath
+  as possible.
 
 1 x 330 Ohm resistor
 
