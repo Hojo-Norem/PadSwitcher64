@@ -1,3 +1,22 @@
+    'This file is part of PadSwitcher64.
+	'
+    'PadSwitcher64 is free software: you can redistribute it and/or modify
+    'it under the terms of the GNU General Public License as published by
+    'the Free Software Foundation, either version 3 of the License, or
+    '(at your option) any later version.
+	'
+    'PadSwitcher64 is distributed in the hope that it will be useful,
+    'but WITHOUT ANY WARRANTY; without even the implied warranty of
+    'MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    'GNU General Public License for more details.
+	'
+    'You should have received a copy of the GNU General Public License
+    'along with PadSwitcher64.  If not, see <https://www.gnu.org/licenses/>.
+	
+	'This text file it tokenised to a C64 prg using C64List and then compiled
+	'using the "BASIC 64" compiler using optimizer II mode with advanced options
+	' 6501/6510 code generation and end of memory set to 49150.
+	
 	{step:10}
 	rem@ m
 	rem@ 02
