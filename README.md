@@ -4,9 +4,9 @@ Interface to allow Super Nintendo (SNES) control pads to be plugged into a C64's
 
 The adapter connects to both C64 joystick ports and allows the active port to be changed on the fly with a push of a button.  The interface defaults to joystick port two on power on.
 
-Also, the interface allows up to four custom mappings to be programmed using a C64-side application.  The custom mappings allow any combination of joystick port two and port one control lines to be mapped to any of the Super Nintendo controller action buttons (A,B,X,Y,L,R).  Any of the action buttons can also have an optional rapid-fire function applied, of which a normal and 'inverted' state is avaliable.  'Inverted' rapid fire is simply that when active the output state of the effected button will be opposite to of a normal rapid fire button when pushed.  For example, mapping a button to joystick left with rapid fire and another button to joystick right with inverted rapid fire will simulate a rapid left/right joystick waggle when both buttons are pushed.
+Also, the interface allows up to four custom mappings to be programmed using a C64-side application.  The custom mappings allow any combination of joystick port two and port one control lines to be mapped to any of the Super Nintendo controller action buttons (A,B,X,Y,L,R).  Any of the action buttons can also have an optional rapid-fire function applied, of which a normal and 'inverted' state is available.  'Inverted' rapid fire is simply that when active the output state of the effected button will be opposite to of a normal rapid fire button when pushed.  For example, mapping a button to joystick left with rapid fire and another button to joystick right with inverted rapid fire will simulate a rapid left/right joystick waggle when both buttons are pushed.
 
-This code was originally developed for the Atmel ATMega8 mcu and was then later ported over to the ATMega88.  This was mainly due to the availiablilty of the Mega8 and that the Mega88 has more power saving features.
+This code was originally developed for the Atmel ATMega8 mcu and was then later ported over to the ATMega88.  This was mainly due to the availability of the Mega8 and that the Mega88 has more power saving features.
 
 This source code was written using AVR-GCC and AVR Libc.  The C64-side software was written in Notepad++, tokenised to CBM BASIC using C64List and then compiled using "BASIC 64".  The machine code portion was assembled using 64tass.
 
@@ -14,11 +14,11 @@ This source code was written using AVR-GCC and AVR Libc.  The C64-side software 
 
 **Mega88 fuse settings: CKDIV8 disabled, all other fuses at factory defaults.**
 
-**PCB has been uploaded to OSH Park ( https://oshpark.com/shared_projects/Fk2LAkUS ) where thay can be ordered in multiples of three.**
+**PCB has been uploaded to OSH Park ( https://oshpark.com/shared_projects/Fk2LAkUS ) where they can be ordered in multiples of three.**
 	
 # TODO :
   * Re-jig command mode for potential compatibility with non-C64 Atari joystick compatible machines.
-  * Maybe figure out how to support two pads while still retaining some semblence of mapping support.
+  * Maybe figure out how to support two pads while still retaining some semblance of mapping support.
 	
 # Pad Mapping: (default)
 |SNES|C64|
