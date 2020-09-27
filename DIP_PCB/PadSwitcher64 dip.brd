@@ -111,9 +111,9 @@
 <wire x1="57.3" y1="26.618878125" x2="53.581378125" y2="30.3375" width="0" layer="20" curve="90"/>
 <wire x1="53.581378125" y1="30.3375" x2="11.2316" y2="30.3375" width="0" layer="20"/>
 <wire x1="11.2316" y1="30.3375" x2="7.62" y2="26.6259" width="0" layer="20" curve="90"/>
-<text x="14.76375" y="23.8125" size="1.778" layer="21">+</text>
+<text x="10.00125" y="22.38375" size="1.778" layer="21">+</text>
 <text x="32.65625" y="5.3975" size="1.6" layer="25" ratio="9" rot="R180" align="center">PadSwitcher64 *2018* JCOMCP</text>
-<text x="10.63625" y="27.14625" size="1.2" layer="25" rot="R270">LED</text>
+<text x="9.36625" y="28.73375" size="1.2" layer="25" rot="R270">LED</text>
 <text x="36.25" y="8.255" size="1.3" layer="29" ratio="12" rot="R180">REV. 5p</text>
 <hole x="44.585" y="28.405" drill="2"/>
 <hole x="40.585" y="28.405" drill="2"/>
@@ -1653,8 +1653,8 @@ Please make sure your boards conform to these design rules.</description>
 <element name="C2" library="resistor" package="E2,5-5" value="100uf" x="54.45125" y="24.9" smashed="yes">
 <attribute name="VALUE" x="51.6255" y="22.233" size="1.27" layer="25" ratio="10" rot="R90"/>
 </element>
-<element name="LED1" library="led" package="LED2X5" value="" x="13.335" y="26.19375" smashed="yes" rot="R90">
-<attribute name="VALUE" x="17.78" y="26.82875" size="1.27" layer="27" ratio="10" rot="R90"/>
+<element name="LED1" library="led" package="LED2X5" value="" x="12.22375" y="26.19375" smashed="yes" rot="R90">
+<attribute name="VALUE" x="16.66875" y="26.82875" size="1.27" layer="27" ratio="10" rot="R90"/>
 </element>
 <element name="SNES_+5V" library="wirepad" package="3,17/1,1" value="" x="44.585" y="28.405" smashed="yes" rot="R180">
 <attribute name="VALUE" x="44.585" y="27.405" size="0.0254" layer="27" rot="R180"/>
@@ -1758,8 +1758,7 @@ Please make sure your boards conform to these design rules.</description>
 <contactref element="LED1" pad="A"/>
 <wire x1="15.08125" y1="17.4625" x2="14.12875" y2="17.4625" width="0.8128" layer="1"/>
 <wire x1="14.12875" y1="17.4625" x2="12.22375" y2="19.20875" width="0.8128" layer="1"/>
-<wire x1="12.22375" y1="19.20875" x2="12.22375" y2="23.65375" width="0.8128" layer="1"/>
-<wire x1="12.22375" y1="23.65375" x2="13.335" y2="24.92375" width="0.8128" layer="1"/>
+<wire x1="12.22375" y1="19.20875" x2="12.22375" y2="24.92375" width="0.8128" layer="1"/>
 </signal>
 <signal name="N$1">
 <contactref element="U$1" pad="5"/>
