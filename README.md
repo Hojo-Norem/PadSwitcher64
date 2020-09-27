@@ -8,9 +8,13 @@ Also, the interface allows up to four custom mappings to be programmed using a C
 
 This code was originally developed for the Atmel ATMega8 mcu and was then later ported over to the ATMega88.  This was mainly due to the availiablilty of the Mega8 and that the Mega88 has more power saving features.
 
-This source code was written using AVR-GCC and AVR Libc.
+This source code was written using AVR-GCC and AVR Libc.  The C64-side software was written in Notepad++, tokenised to CBM BASIC using C64List and then compiled using "BASIC 64".  The machine code portion was assembled using 64tass.
 
 **A pre-compiled HEX file for the AVR and the C64-side software for setting the custom mappings can be found in the releases section.**
+
+**Mega88 fuse settings: CKDIV8 disabled, all other fuses at factory defaults.**
+
+**PCB has been uploaded to OSH Park ( https://oshpark.com/shared_projects/Fk2LAkUS ) where thay can be ordered in multiples of three.**
 	
 # TODO :
   * Re-jig command mode for potential compatibility with non-C64 Atari joystick compatible machines.
