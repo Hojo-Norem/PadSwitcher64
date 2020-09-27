@@ -13919,7 +13919,7 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <plain>
 <text x="27.94" y="-15.24" size="1.27" layer="100">    This file is part of PadSwitcher64.
 
-    PadSwitcher64 is free software: you can redistribute it and/or modify
+    PadSwitcher64 is free software / hardware: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
