@@ -310,11 +310,11 @@ uint8_t MASTERHELD;
 	//Setting up system tick clock
 	//****************************
 	
-	TCCR0A = (WGM01<<1);			// Set timer0A CTC mode
-	TCCR0B = (CS02<<1)|(CS00<<1);	// Set timer0A 1024 clock divider
+	TCCR0A = _BV(WGM01);			// Set timer0A CTC mode
+	TCCR0B = _BV(CS02) | _BV(CS00);	// Set timer0A 1024 clock divider
 	OCR0A = 19;						// set timer0A compare = 19 - should be roughly 205Hz
 	
-	TIMSK0 = OCIE0A<<1;				// Enable timer0A interrupt
+	TIMSK0 = _BV(OCIE0A);				// Enable timer0A interrupt
 
 	SetupPorts();
 	
