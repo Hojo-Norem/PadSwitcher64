@@ -10,7 +10,7 @@ This code was originally developed for the Atmel ATMega8 mcu and was then later 
 
 This source code was written using AVR-GCC and AVR Libc.  The C64-side software was written in Notepad++, tokenised to CBM BASIC using C64List and then compiled using "BASIC 64".  The machine code portion was assembled using 64tass.
 
-**A pre-compiled HEX file for the AVR and the C64-side software for setting the custom mappings can be found in the releases section.**
+**A pre-compiled HEX file for the AVR and the C64-side software for setting the custom mappings can be found in the releases section.  Once sucessfully programmed, the LED indicator will flash for a couple of seconds on every subsiquent power-on.**
 
 **Mega88 fuse settings: CKDIV8 disabled, all other fuses at factory defaults.**
 
